@@ -1,0 +1,190 @@
+"""
+Setup Script for MOJ E-Notary WhatsApp Automation System
+Handles installation, dependency checking, and initial configuration
+"""
+import os
+import sys
+import subprocess
+import json
+from pathlib import Path
+
+
+def print_header(text):
+    print("
+" + "=" * 60)
+    print(f"  {text}")
+    print("=" * 60 + "
+")
+
+
+def check_python_version():
+    """Check if Python version is 3.9 or higher"""
+    version = sys.version_info
+    if version.major < 3 or (version.major == 3 and version.minor < 9):
+        print("❌ Python 3.9 or higher is required!")
+        print(f"   Current version: {version.major}.{version.minor}.{version.micro}")
+        return False
+    print(f"✅ Python version: {version.major}.{version.minor}.{version.micro}")
+    return True
+
+
+def install_dependencies():
+    """Install required Python packages"""
+    print_header("Installing Dependencies")
+
+    requirements_file = Path("requirements.txt")
+    if not requirements_file.exists():
+        print("❌ requirements.txt not found!")
+        return False
+
+    try:
+        subprocess.check_call([
+            sys.executable, "-m", "pip", "install", "-r", "requirements.txt"
+        ])
+        print("✅ All dependencies installed successfully")
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"❌ Failed to install dependencies: {e}")
+        return False
+
+
+def create_directories():
+    """Create necessary directory structure"""
+    print_header("Creating Directory Structure")
+
+    dirs = ["data", "logs", "backups", "chrome_profile"]
+    for d in dirs:
+        Path(d).mkdir(exist_ok=True)
+        print(f"  📁 {d}/")
+
+    print("✅ Directories created")
+    return True
+
+
+def check_chrome():
+    """Check if Google Chrome is installed"""
+    print_header("Checking Chrome Installation")
+
+    chrome_paths = [
+        r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+        r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+        os.path.expanduser(r"~\AppData\Local\Google\Chrome\Application\chrome.exe")
+    ]
+
+    for path in chrome_paths:
+        if os.path.exists(path):
+            print(f"✅ Chrome found: {path}")
+            return True
+
+    print("⚠️  Chrome not found in standard locations")
+    print("   Please ensure Google Chrome is installed")
+    print("   Download from: https://www.google.com/chrome/")
+    return False
+
+
+def create_default_config():
+    """Create default groups configuration if not exists"""
+    print_header("Setting Up Configuration")
+
+    config_path = Path("config/groups.json")
+    if config_path.exists():
+        print("✅ Configuration file already exists")
+        return True
+
+    default_config = {
+        "payment_groups": [
+            "MOJ Payments",
+            "طلبات التوثيق",
+            "E-Notary Requests"
+        ],
+        "broker_groups": [
+            "Broker Deals",
+            "وسطاء التوثيق"
+        ],
+        "internal_groups": [
+            "اعتمادات",
+            "Internal Approvals"
+        ],
+        "lawyer_mapping_group": "اعتمادات",
+        "commission_percent": 20.0
+    }
+
+    try:
+        with open(config_path, "w", encoding="utf-8") as f:
+            json.dump(default_config, f, ensure_ascii=False, indent=4)
+        print("✅ Default configuration created")
+        print(f"   Location: {config_path}")
+        print("   ⚠️  Please edit this file with your actual WhatsApp group names!")
+        return True
+    except Exception as e:
+        print(f"❌ Error creating config: {e}")
+        return False
+
+
+def print_final_instructions():
+    """Print final setup instructions"""
+    print_header("Setup Complete!")
+    print("""
+🚀 Next Steps:
+
+1. EDIT CONFIGURATION:
+   Open: config/groups.json
+   Add your actual WhatsApp group names
+
+2. FIRST RUN:
+   python main.py
+
+   - Chrome will open with WhatsApp Web
+   - Scan QR code with your phone
+   - Dashboard will appear
+
+3. HEADLESS MODE (after first login):
+   python main.py --headless --no-ui
+
+4. CUSTOM CONFIG:
+   python main.py --config config/your_groups.json
+
+📁 Important Files:
+   - data/moj_transactions.xlsx    (Excel reports)
+   - data/moj_automation.db        (SQLite database)
+   - logs/                         (System logs)
+   - backups/                      (Excel backups)
+
+⚠️  Notes:
+   - Keep Chrome updated for webdriver compatibility
+   - First login requires GUI (not headless)
+   - WhatsApp session persists in ./chrome_profile/
+
+📖 For more info: README.md
+    """)
+
+
+def main():
+    """Main setup function"""
+    print_header("MOJ E-Notary WhatsApp Automation System - Setup")
+
+    # Check Python version
+    if not check_python_version():
+        sys.exit(1)
+
+    # Create directories
+    create_directories()
+
+    # Check Chrome
+    check_chrome()
+
+    # Install dependencies
+    if not install_dependencies():
+        print("
+⚠️  Some dependencies failed to install.")
+        print("   You may need to install them manually.")
+
+    # Create default config
+    create_default_config()
+
+    # Print instructions
+    print_final_instructions()
+
+
+if __name__ == "__main__":
+    main()
